@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from "react";
 import { useTestStore } from "../store/testStore";
 import { ExamType, Subject, TestAttempt } from "../types";
 import { 
@@ -11,7 +12,14 @@ import {
   Trash2, 
   RotateCcw,
   CheckCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Download,
+  X,
+  Monitor,
+  Smartphone,
+  Share2,
+  HelpCircle,
+  Info
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
 
@@ -22,6 +30,49 @@ interface DashboardProps {
 
 export default function Dashboard({ onStartNewTest, onReviewTest }: DashboardProps) {
   const { pastAttempts, startTest, deleteAttempt } = useTestStore();
+
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showInstallBanner, setShowInstallBanner] = useState(() => {
+    return localStorage.getItem("jee-pwa-banner-dismissed") !== "true";
+  });
+  const [showHowToInstall, setShowHowToInstall] = useState(false);
+
+  useEffect(() => {
+    // Detect if already installed and running standalone
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    setIsStandalone(isPWA);
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to install prompt: ${outcome}`);
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    } else {
+      setShowHowToInstall(true);
+    }
+  };
+
+  const dismissBanner = () => {
+    localStorage.setItem("jee-pwa-banner-dismissed", "true");
+    setShowInstallBanner(false);
+  };
 
   // Load state and compute values
   const totalAttempted = pastAttempts.length;
@@ -98,6 +149,81 @@ export default function Dashboard({ onStartNewTest, onReviewTest }: DashboardPro
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </button>
       </div>
+
+      {/* PWA Promotion & Installation Banner */}
+      {!isStandalone && showInstallBanner && (
+        <div className="mb-8 relative overflow-hidden rounded-2xl border border-blue-105 bg-linear-to-r from-blue-50 to-indigo-50/40 p-6 shadow-xs animate-fadeIn flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <img
+                src="/assets/logo-512.png"
+                alt="JEE Exam Simulator Custom Logo"
+                className="h-16 w-16 rounded-2xl shadow-md border border-white"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "https://picsum.photos/seed/educated/150/150";
+                }}
+              />
+              <span className="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-blue text-white shadow-xs border-2 border-white">
+                <Sparkles className="h-3 w-3" />
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-brand-blue/15 text-brand-blue border border-brand-blue/20 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide">
+                  Install Available
+                </span>
+                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest font-mono">
+                  Offline Ready
+                </span>
+              </div>
+              <h3 className="font-display text-base font-bold text-slate-800 leading-snug">
+                Install "JEE Exam Simulator" on Your Device
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-2xl font-sans font-medium">
+                Add this application to your home screen or desktop taskbar with its official custom logo. Run in a clean, dedicated standalone window, enjoy faster load times, and practice mock questions entirely offline.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0 w-full md:w-auto">
+            <button
+              onClick={handleInstallClick}
+              className="flex-1 md:flex-initial flex items-center justify-center gap-2 rounded-xl bg-brand-blue hover:bg-brand-blue-dark px-5 py-3 text-xs font-bold text-white shadow-sm shadow-brand-blue/10 transition-all cursor-pointer select-none"
+            >
+              <Download className="h-4 w-4" />
+              <span>Install App Now</span>
+            </button>
+            <button
+              onClick={() => setShowHowToInstall(true)}
+              className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-3 text-xs font-bold text-slate-600 transition-all cursor-pointer select-none"
+            >
+              <HelpCircle className="h-4 w-4 text-slate-400" />
+              <span>How To Install</span>
+            </button>
+            <button
+              onClick={dismissBanner}
+              className="p-2.5 rounded-xl hover:bg-slate-250 border border-transparent hover:border-slate-200 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+              title="Dismiss banner"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Standalone Success Toast-style notice */}
+      {isStandalone && (
+        <div className="mb-6 flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/40 px-4 py-2.5 shadow-3xs animate-fadeIn">
+          <div className="flex items-center gap-2 text-xs text-emerald-800 font-medium animate-pulse">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span>Running in standalone desktop/mobile client mode with the official Custom Logo.</span>
+          </div>
+          <span className="text-[9px] font-bold text-emerald-600 font-mono tracking-widest uppercase">
+            ✓ STANDALONE INSTALLED CLIENT
+          </span>
+        </div>
+      )}
 
       {totalAttempted === 0 ? (
         /* Empty State Onboarding */
@@ -369,6 +495,110 @@ export default function Dashboard({ onStartNewTest, onReviewTest }: DashboardPro
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* Elegant How-To-Install Modal Overlay */}
+      {showHowToInstall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-xs animate-fadeIn p-4">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-scaleUp">
+            
+            {/* Modal Header */}
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-blue/15 text-brand-blue">
+                  <Monitor className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-extrabold text-sm text-slate-900 leading-tight">
+                    Installation Guidelines
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                    Pin Custom Logo App on any platform
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHowToInstall(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="p-5 overflow-y-auto space-y-5 max-h-[420px] bg-white">
+              
+              <div className="flex items-center gap-3 bg-blue-50/50 border border-blue-100/50 rounded-xl p-3">
+                <img
+                  src="/assets/logo-512.png"
+                  alt="App Icon View"
+                  className="h-12 w-12 rounded-xl shadow-xs border border-white"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "https://picsum.photos/seed/educated/150/150";
+                  }}
+                />
+                <div className="leading-tight">
+                  <h4 className="text-xs font-bold text-slate-800">JEE Exam Simulator</h4>
+                  <p className="text-[10px] text-slate-505 font-sans mt-0.5">High-Precision NTA Sandbox for Physics, Chemistry, and Math</p>
+                </div>
+              </div>
+
+              {/* iOS Safari Steps */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900 border-b border-slate-100 pb-1">
+                  <Smartphone className="h-4 w-4 text-emerald-500" />
+                  <span>iOS Device (Safari Browser)</span>
+                </div>
+                <ol className="list-decimal pl-5 text-[11px] text-slate-600 space-y-1 font-medium font-sans leading-normal">
+                  <li>Open this page in the default <strong className="text-slate-800">Safari</strong> browser.</li>
+                  <li>Tap the <strong className="text-slate-800">Share</strong> button (the box with an upward-pointing arrow) in the bottom navigation bar.</li>
+                  <li>Scroll down and select <strong className="text-slate-800">Add to Home Screen</strong>.</li>
+                  <li>Tap <strong className="text-brand-blue">Add</strong> in the top-right corner. The app icon will appear on your device layout.</li>
+                </ol>
+              </div>
+
+              {/* Android Chrome Steps */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900 border-b border-slate-100 pb-1">
+                  <Smartphone className="h-4 w-4 text-brand-blue" />
+                  <span>Android Device (Chrome / Edge)</span>
+                </div>
+                <ol className="list-decimal pl-5 text-[11px] text-slate-600 space-y-1 font-medium font-sans leading-normal">
+                  <li>Tap the <strong className="text-slate-800">three-dots menu</strong> in the top-right corner of the browser.</li>
+                  <li>Tap <strong className="text-slate-800">Add to Home screen</strong> or <strong className="text-slate-805">Install app</strong>.</li>
+                  <li>Confirm by pressing <strong className="text-brand-blue">Install</strong> in the pop-up prompt.</li>
+                </ol>
+              </div>
+
+              {/* Desktop Browsers (Mac, Windows, Linux) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-900 border-b border-slate-100 pb-1">
+                  <Monitor className="h-4 w-4 text-violet-500" />
+                  <span>Desktop Computers (Chrome, Edge, Brave)</span>
+                </div>
+                <ol className="list-decimal pl-5 text-[11px] text-slate-600 space-y-1 font-medium font-sans leading-normal">
+                  <li>Look at the right side of your browser's <strong className="text-slate-805">address bar</strong> (URL bar).</li>
+                  <li>Click on the <strong className="text-slate-805">App Install Icon</strong> (looks like a monitor screen with an arrow, or a plus ⊕ button).</li>
+                  <li>Or, click the browser's menu (three dots) and choose <strong className="text-slate-805">Save and share</strong> → <strong className="text-slate-805">Install page as app</strong>.</li>
+                </ol>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+              <span className="text-[9px] font-mono font-bold text-slate-400">PWA CAPABILITIES ACTIVE</span>
+              <button
+                onClick={() => setShowHowToInstall(false)}
+                className="rounded-lg bg-slate-200 hover:bg-slate-300 px-4 py-1.5 text-xs font-bold text-slate-700 transition cursor-pointer"
+              >
+                Got It
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 

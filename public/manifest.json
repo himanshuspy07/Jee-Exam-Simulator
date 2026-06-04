@@ -4,7 +4,7 @@
   "description": "Adaptive mock test and performance tracker for JEE Main and Advanced.",
   "icons": [
     {
-      "src": "assets/logo-192.png",
+      "src": "assets/logo-512.png",
       "type": "image/png",
       "sizes": "192x192"
     },

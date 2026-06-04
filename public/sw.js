@@ -6,7 +6,6 @@ const ASSETS = [
   "/src/App.tsx",
   "/src/index.css",
   "/public/manifest.json",
-  "/assets/logo-192.png",
   "/assets/logo-512.png"
 ];
 
