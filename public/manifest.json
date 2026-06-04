@@ -1,0 +1,22 @@
+{
+  "short_name": "JEE Simulator",
+  "name": "JEE Exam Simulator",
+  "description": "Adaptive mock test and performance tracker for JEE Main and Advanced.",
+  "icons": [
+    {
+      "src": "assets/logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "assets/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F8FAFC",
+  "theme_color": "#5B8DEF",
+  "display": "standalone",
+  "orientation": "portrait"
+}

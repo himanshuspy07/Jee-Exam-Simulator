@@ -1,0 +1,6 @@
+{
+  "name": "JEE Exam Simulator",
+  "description": "A high-fidelity mock test simulator for JEE Main, JEE Advanced and PYQs with real exam interface, duration calculation, NTA palette grid, analytics dashboard, detailed solutions, and offline-ready PWA support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
